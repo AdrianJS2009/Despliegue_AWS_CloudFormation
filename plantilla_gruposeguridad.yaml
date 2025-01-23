@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Plantilla Ajimsan2009
+
+Resources:
+  GrupoSeguridad:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Grupo de Seguridad que permite el tráfico por el puerto 22 desde cualquier IP
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: "22"
+          ToPort: "22"
+          CidrIp: "0.0.0.0/0"
+
+  InstanciaEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      Tags:
+        - Key: Name
+          Value: InstanciaEC2
+      ImageId: ami-0c55b159cbfafe1f0
+      InstanceType: t2.small
+      KeyName: vockey
+      SecurityGroups:
+        - Ref: GrupoSeguridad
