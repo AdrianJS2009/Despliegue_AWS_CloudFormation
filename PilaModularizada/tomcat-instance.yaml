@@ -1,9 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Plantilla Mejorada - Ajimsan2009
-
-##------------##
-## PARAMETERS ##
-##------------##
+Description: Stack de Instancia Tomcat
 
 Parameters:
   InstanceName:
@@ -12,17 +8,16 @@ Parameters:
     MinLength: 5
 
   AMI:
-    Description: ID de la imagen de la instancia
+    Description: ID de la AMI de la instancia
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/canonical/ubuntu/server/jammy/stable/current/amd64/hvm/ebs-gp2/ami-id
 
   VPC:
     Description: VPC donde se creara la instancia
     Type: AWS::EC2::VPC::Id
-    Default: vpc-052b9e6e1b64dabfc
 
   InstanceType:
-    Description: Tipo de instancia permitidas
+    Description: Tipo de instancia
     Type: String
     Default: t2.micro
     AllowedValues:
@@ -31,38 +26,8 @@ Parameters:
       - t2.nano
       - t2.large
 
-##------------##
-##  RESOURCES ##
-##------------##
-
 Resources:
-  GrupoSeguridadSSHTCP:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Permitir trafico SSH y HTTP
-      VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp: 0.0.0.0/0
-
-  GrupoSeguridadHTTP:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Permitir trafico HTTP
-      VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-
-  InstanciaEC2:
+  TomcatInstance:
     Type: AWS::EC2::Instance
     Properties:
       Tags:
@@ -72,7 +37,7 @@ Resources:
       InstanceType: !Ref InstanceType
       KeyName: vockey
       SecurityGroupIds:
-        - !Ref GrupoSeguridadSSHTCP
+        - Fn::ImportValue: SecurityGroupTomcat
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -163,19 +128,21 @@ Resources:
 
           echo "Finalizando configuración."
 
-##------------##
-##  OUTPUTS   ##
-##------------##
-
 Outputs:
-  PrivateIPTomcat:
+  TomcatInstancePrivateIP:
     Description: IP privada de la instancia Tomcat
-    Value: !GetAtt InstanciaEC2.PrivateIp
+    Value: !GetAtt TomcatInstance.PrivateIp
+    Export:
+      Name: TomcatInstancePrivateIP
 
-  HealthCheckURL:
+  TomcatHealthCheckURL:
     Description: URL del endpoint de Health Check
     Value:
       !Join [
         "",
-        ["http://", !GetAtt InstanciaEC2.PrivateIp, ":8080/api/health"],
+        [
+          "http://",
+          !GetAtt TomcatInstance.PrivateIp,
+          ":8080/studentify/api/health",
+        ],
       ]
